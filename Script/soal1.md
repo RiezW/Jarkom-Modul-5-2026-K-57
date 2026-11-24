@@ -28,7 +28,7 @@
 
 Diagram pohon berikut menampilkan pemecahan blok **10.92.0.0/16** menjadi subnet-subnet VLSM yang lebih kecil sesuai kebutuhan jaringan.
 
-![Diagram pohon pembagian IP](Assets/Diagram%20pohon.png)
+![alt text](<Assets/Diagram pohon v2.png>)
 
 Pada diagram pohon tersebut, lima subnet yang ditandai dengan lingkaran merah merupakan subnet pada jalur **Dummy-Plug** menuju **Armisael**.
 
