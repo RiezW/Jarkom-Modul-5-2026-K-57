@@ -1,7 +1,7 @@
 # Soal 5: Firewall Gendou
 
 ## 1. Menyiapkan Skrip Firewall
-
+ disini script.sh diganti ke gendo.sh
 Jalankan perintah berikut di console Gendou untuk membuat `/root/gendo.sh`, menyalinnya ke `/root/script.sh`, dan menjalankan skrip:
 
 ```bash
