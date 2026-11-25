@@ -29,7 +29,7 @@ cat > /root/web.sh << 'EOL'
 #!/bin/sh
 # pakai: sh /root/web.sh PORT "PESAN"
 while true; do
-    echo "$2" | nc -l -p $1 -q 1
+    nc -l -p $1 -c "echo '$2'"
     sleep 0.2
 done
 EOL
@@ -52,13 +52,15 @@ nohup sh /root/web.sh 8080 "syifa imutz" > /dev/null 2>&1 &
 Penjelasan:
 
 - **`$(hostname)`** diisi otomatis dengan nama node (`Pen-Pen` atau `Tokyo3-Core`), sehingga jawabannya sesuai format `Welcome to {hostname}`.
-- **`nc -l -p PORT -q 1`**: listener netcat-traditional mengirim pesan ke klien yang tersambung, lalu menutup koneksi 1 detik setelah pesan habis dikirim.
+- **`nc -l -p PORT -c "echo 'PESAN'"`**: setiap ada klien yang tersambung, netcat-traditional menjalankan `echo` untuk mengirim pesan, lalu koneksi ditutup ketika `echo` selesai.
 - **Loop `while true`**: setelah satu klien selesai, listener langsung dibuka lagi untuk klien berikutnya.
 - **`update-alternatives`**: sama seperti Soal 7, memastikan `nc` memakai netcat-traditional.
 
 ![Bagian Soal 8 pada skrip Pen-Pen](<Assets/soal8_script penpen.png>)
 
 ![Bagian Soal 8 pada skrip Tokyo3-Core](<Assets/soal8_script tokyo3core.png>)
+
+Catatan: kedua gambar di atas masih menampilkan versi awal `web.sh` (`echo "$2" | nc -l -p $1 -q 1`). Versi tersebut diganti dengan `-c` saat memasang boot hook, lihat [boothook.md](boothook.md). Perilaku dan jawaban setiap port tetap sama.
 
 Pada akhir kedua gambar, `ss -ltn` menunjukkan port 80 (Pen-Pen) serta port 80 dan 8080 (Tokyo3-Core) dalam status `LISTEN`.
 
