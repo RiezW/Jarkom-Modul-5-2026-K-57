@@ -41,6 +41,8 @@ Penjelasan:
 
 ## 3. Membuat `/root/boot.sh`
 
+Bagian ini adalah versi pertama. Versi akhir (dengan `layanan.sh`) ada di [bagian 7](#7-pembaruan-paket-hilang-saat-project-dibuka-ulang).
+
 Contoh untuk **Magi-Casper**:
 
 ```bash
@@ -174,7 +176,88 @@ Ketiga port menjawab seperti pada Soal 8.
 
 ![Uji layanan setelah restart](<Assets/boothook_uji layanan melchior.png>)
 
-## 7. Catatan
+## 7. Pembaruan: Paket Hilang Saat Project Dibuka Ulang
+
+### Gejala
+
+Pengujian di atas memakai **Stop lalu Start** node, yang mempertahankan isi container. Ketika project GNS3 **ditutup lalu dibuka ulang**, container dibuat ulang dari image, sehingga hanya `/root` dan `/etc/network` yang tersisa. Paket hasil `apt-get install`, termasuk `netcat-traditional` (Soal 7), ikut hilang.
+
+Akibatnya setelah project dibuka ulang:
+
+- Aturan firewall tetap kembali, karena file `.rules` berada di `/root`.
+- `/bin/nc` kembali menjadi `nc.openbsd`. Netcat-openbsd tidak mengenal opsi `-c`, sehingga `web.sh` di Pen-Pen dan Tokyo3-Core tidak pernah membuka port 80 dan 8080.
+
+### Perbaikan: `/root/layanan.sh`
+
+Bagian layanan dipindah dari `boot.sh` ke skrip terpisah `/root/layanan.sh` yang berjalan di latar belakang. Skrip ini memasang ulang `netcat-traditional` jika belum ada, lalu baru menyalakan layanan. Contoh untuk **Pen-Pen**:
+
+```bash
+cat > /root/layanan.sh << 'EOF'
+#!/bin/sh
+# Layanan node: pastikan netcat-traditional terpasang, lalu nyalakan layanan
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+until [ -x /bin/nc.traditional ]; do
+    apt-get update; apt-get install -y netcat-traditional || sleep 15
+done
+update-alternatives --set nc /bin/nc.traditional
+pkill -f web.sh; pkill -f "nc -l -p"
+nohup sh /root/web.sh 80 "Welcome to $(hostname)" > /dev/null 2>&1 &
+EOF
+```
+
+`boot.sh` versi akhir hanya memulihkan aturan dan menjalankan `layanan.sh`:
+
+```bash
+cat > /root/boot.sh << 'EOF'
+#!/bin/sh
+# Boot hook: pulihkan firewall dan layanan setelah node restart
+# Pakai PATH sistem agar sh dan nc bukan applet busybox milik GNS3 (/gns3/bin)
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+N=pen-pen
+[ -f /root/$N.rules ] && iptables-restore < /root/$N.rules
+# Layanan di latar belakang: paket apt bisa hilang saat project dibuka ulang
+nohup sh /root/layanan.sh > /root/layanan.log 2>&1 &
+EOF
+```
+
+Baris layanan di akhir `layanan.sh` mengikuti tabel pada bagian 3 untuk setiap node (MAGI memakai `pkill -f listener.sh` dan `listener.sh PORT`).
+
+Penjelasan:
+
+- **Latar belakang (`nohup ... &`)**: saat boot, internet belum tentu tersedia karena Gendou baru pulih setelah `gendo.sh` dijalankan. `layanan.sh` menunggu tanpa menahan proses boot, sedangkan aturan firewall sudah dipulihkan lebih dulu.
+- **Loop `until`**: `apt-get install` diulang setiap 15 detik sampai `/bin/nc.traditional` ada, sehingga layanan otomatis menyala begitu internet tersedia.
+- **`apt-get update; apt-get install`** (bukan `&&`): jam server GNS3 tertinggal sekitar 10 menit. Jika repositori `trixie-security` baru saja ditandatangani ulang, tanda tangannya dianggap berasal dari masa depan dan `apt-get update` gagal (`OpenPGP signature verification failed`). Dengan `;`, kegagalan satu repositori tidak membatalkan pemasangan, karena `netcat-traditional` berasal dari repositori utama `trixie` yang tetap berhasil diperbarui.
+- Log pemasangan tersimpan di `/root/layanan.log`.
+
+### Pengujian
+
+Kondisi project dibuka ulang disimulasikan dengan menghapus paket (`apt-get remove -y netcat-traditional`), lalu node di-Stop dan di-Start. Setelah boot (dan `gendo.sh` di Gendou), dijalankan:
+
+```bash
+echo "boot: $(ps -o lstart= -p 1)"
+grep -E 'Setting up netcat' /root/layanan.log
+readlink -f /bin/nc
+echo "rules: $(iptables-save | grep -c '^-A')"
+ss -ltn | grep LISTEN
+```
+
+**Magi-Casper:** paket dipasang ulang oleh `layanan.sh`, aturan kembali (4), dan port 5000 `LISTEN`.
+
+![Casper memasang ulang netcat-traditional](<Assets/boothook_reinstall casper.png>)
+
+**Pen-Pen** (dengan `layanan.sh` versi akhir): paket dipasang ulang, `/bin/nc` kembali ke `nc.traditional`, aturan kembali (11), dan port 80 `LISTEN`.
+
+![Pen-Pen memasang ulang netcat-traditional](<Assets/boothook_reinstall penpen.png>)
+
+**Magi-Balthasar:** port 5000 dan 5001 kembali `LISTEN` dengan `nc.traditional`.
+
+![Balthasar setelah pemasangan ulang](<Assets/boothook_reinstall balthasar.png>)
+
+Uji layanan web dari Magi-Melchior setelah project dibuka ulang:
+
+![Uji layanan web dari Melchior](<Assets/boothook_reinstall uji melchior.png>)
+
+## 8. Catatan
 
 - Setiap kali aturan firewall di node berubah, perbarui salinannya: `iptables-save > /root/<node>.rules`.
 - Router tidak memakai boot hook ini. Router selain Gendou sudah menjalankan `up bash /root/script.sh` dari `/etc/network/interfaces` saat boot (Soal 2), sehingga bagian yang ditambahkan ke `script.sh`, misalnya DNAT Soal 17 di Fuyutsuki, ikut kembali otomatis. Gendou belum punya baris tersebut, jadi setelah restart dijalankan `bash /root/gendo.sh` secara manual.

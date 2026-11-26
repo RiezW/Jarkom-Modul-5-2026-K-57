@@ -718,19 +718,37 @@ Pada node Docker GNS3, aturan `iptables` dan proses latar belakang (listener MAG
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 N=magi-casper
 [ -f /root/$N.rules ] && iptables-restore < /root/$N.rules
+# Layanan di latar belakang: paket apt bisa hilang saat project dibuka ulang
+nohup sh /root/layanan.sh > /root/layanan.log 2>&1 &
+```
+
+```bash
+#!/bin/sh
+# /root/layanan.sh: pastikan netcat-traditional terpasang, lalu nyalakan layanan
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+until [ -x /bin/nc.traditional ]; do
+    apt-get update; apt-get install -y netcat-traditional || sleep 15
+done
+update-alternatives --set nc /bin/nc.traditional
 pkill -f listener.sh; pkill -f "nc -l -p"
 nohup sh /root/listener.sh 5000 > /dev/null 2>&1 &
 ```
 
-Skrip ini dipanggil dari `/etc/network/interfaces` dengan baris `up bash /root/boot.sh`. Baris yang sama disisipkan juga ke heredoc Soal 6 di skrip node, agar tidak hilang ketika skrip node dijalankan ulang.
+`boot.sh` dipanggil dari `/etc/network/interfaces` dengan baris `up bash /root/boot.sh`. Baris yang sama disisipkan juga ke heredoc Soal 6 di skrip node, agar tidak hilang ketika skrip node dijalankan ulang.
 
-Saat pengujian pertama, `web.sh` tidak pernah membuka port setelah boot. Penyebabnya, init GNS3 menjalankan perintah boot dengan `/gns3/bin` di depan `PATH`, sehingga `sh` dan `nc` mengarah ke applet busybox yang tidak mendukung opsi `nc` yang dipakai. Setelah `PATH` sistem dipasang di awal `boot.sh`, kelima node di-restart dan semua aturan serta layanan kembali otomatis:
+Tiga masalah ditemukan dan diperbaiki selama pengujian:
+
+1. **`PATH` busybox:** init GNS3 menjalankan perintah boot dengan `/gns3/bin` di depan `PATH`, sehingga `sh` dan `nc` mengarah ke applet busybox. Diperbaiki dengan `export PATH` sistem di awal skrip.
+2. **Paket hilang saat project dibuka ulang:** container dibuat ulang dan `netcat-traditional` hilang, sehingga `nc` kembali ke netcat-openbsd yang tidak mengenal opsi `-c` milik `web.sh`. Diperbaiki dengan `layanan.sh` yang memasang ulang paket di latar belakang sampai internet dari Gendou tersedia.
+3. **Jam server tertinggal sekitar 10 menit:** tanda tangan repositori `trixie-security` yang baru dibuat dianggap berasal dari masa depan, sehingga `apt-get update` gagal. Karena itu dipakai `apt-get update; apt-get install` (bukan `&&`), agar paket tetap terpasang dari repositori utama.
 
 ![Diagnosis web.sh berjalan di busybox](<Script/Assets/boothook_diagnosis busybox.png>)
 
-![Tokyo3-Core setelah restart](<Script/Assets/boothook_tokyo3core.png>)
+Simulasi project dibuka ulang (paket dihapus, node di-restart): Pen-Pen memasang ulang `netcat-traditional`, memulihkan 11 aturan, dan port 80 kembali `LISTEN`, lalu ketiga layanan web menjawab dari Melchior.
 
-![Uji layanan setelah restart](<Script/Assets/boothook_uji layanan melchior.png>)
+![Pen-Pen memasang ulang netcat-traditional](<Script/Assets/boothook_reinstall penpen.png>)
+
+![Uji layanan web dari Melchior](<Script/Assets/boothook_reinstall uji melchior.png>)
 
 Router tidak memakai hook ini, karena router selain Gendou sudah menjalankan `/root/script.sh` saat boot. Gendou dipulihkan dengan `bash /root/gendo.sh`.
 
