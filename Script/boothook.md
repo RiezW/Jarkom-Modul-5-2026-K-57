@@ -177,4 +177,4 @@ Ketiga port menjawab seperti pada Soal 8.
 ## 7. Catatan
 
 - Setiap kali aturan firewall di node berubah, perbarui salinannya: `iptables-save > /root/<node>.rules`.
-- Router (Gendou, Fuyutsuki, dan lainnya) tidak memakai boot hook ini. Setelah router restart, skripnya dijalankan ulang secara manual (`bash /root/gendo.sh` untuk Gendou, `bash /root/script.sh` untuk router lain). Aturan DNAT Soal 17 berada di dalam `/root/script.sh` Fuyutsuki, sehingga ikut kembali saat skrip itu dijalankan.
+- Router tidak memakai boot hook ini. Router selain Gendou sudah menjalankan `up bash /root/script.sh` dari `/etc/network/interfaces` saat boot (Soal 2), sehingga bagian yang ditambahkan ke `script.sh`, misalnya DNAT Soal 17 di Fuyutsuki, ikut kembali otomatis. Gendou belum punya baris tersebut, jadi setelah restart dijalankan `bash /root/gendo.sh` secara manual.
