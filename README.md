@@ -1,11 +1,20 @@
-# Laporan Praktikum Modul 5 Jaringan Komputer 2026: Operation Geofront
+# Jarkom-Modul-5-2026-K-57
 
-**Kelompok K-57**
-
-| Anggota (GitHub) | Bagian Pengerjaan |
+| | |
 |---|---|
-| RiezW | Soal 1 - 5, Soal 9 - 10, Soal 18 - 20 |
-| SDaffAL | Soal 6 - 8, Soal 11 - 17, Boot Hook |
+| **Nama** | : Riezco Eka Bayu Witantra & Sulthan Daffa Al Hasyimi |
+| **NRP** | : 5027251057 & 5027251091 |
+| **Kelompok** | : K-57 |
+| **Mata Kuliah** | : JarKom |
+
+---
+
+**Laporan Praktikum Modul 5 Jaringan Komputer 2026: Operation Geofront**
+
+| Anggota | Bagian Pengerjaan |
+|---|---|
+| Riezco Eka Bayu Witantra (RiezW) | Soal 1 - 5, Soal 9 - 10, Soal 18 - 20 |
+| Sulthan Daffa Al Hasyimi (SDaffAL) | Soal 6 - 8, Soal 11 - 17, Boot Hook |
 
 Laporan ini merangkum pengerjaan seluruh soal secara berurutan. Setiap soal berisi apa yang diminta, cara pengerjaan, dan bukti utama. Langkah lengkap, semua perintah, dan seluruh tangkapan layar ada di folder [`Script/`](Script), satu file per soal.
 
