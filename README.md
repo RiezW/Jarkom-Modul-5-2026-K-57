@@ -72,7 +72,7 @@ Setiap soal berikutnya **menambahkan bagian baru** di akhir skrip node (`cat >> 
 2. Setiap subnet memakai prefix terkecil yang muat.
 3. Alamat diisi berurutan: network, gateway (IP usable pertama), IP terpakai, broadcast, dan sisa.
 
-Tabel pembagian IP:
+[Tabel pembagian IP](https://docs.google.com/spreadsheets/d/1Kv5xs7Ta0gNL1HRg_fnbVs4BkaQVIs_L/edit?usp=sharing)
 
 ![Tabel pembagian IP](<Script/Assets/pembagian IP.png>)
 
